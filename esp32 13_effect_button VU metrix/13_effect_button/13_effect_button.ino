@@ -1,4 +1,5 @@
-
+// (Heavily) adapted from https://github.com/G6EJD/ESP32-8266-Audio-Spectrum-Display/blob/master/ESP32_Spectrum_Display_02.ino
+// Adjusted to allow brightness changes on press+hold, Auto-cycle for 3 button presses within 2 seconds
 // Edited to add Neomatrix support for easier compatibility with different layouts.
 
 #include <FastLED_NeoMatrix.h>
@@ -47,7 +48,7 @@ CRGB leds[NUM_LEDS];
  * Colors of bars and peaks in different modes, changeable to your likings  *
  ****************************************************************************/
 // Colors mode 0
-#define ChangingBar_Color   y * (255 / kMatrixHeight) + colorTimer, 255, 255
+#define ChangingBar_Color   x * (255 / kMatrixHeight) + colorTimer, 255, 255
 // no peaks
 
 // Colors mode 1 These are the colors from the TRIBAR when using Ledstrip
@@ -170,7 +171,7 @@ void changeMode() {
   Serial.println("Button pressed");
   if (FastLED.getBrightness() == 0) FastLED.setBrightness(BRIGHTNESS_SETTINGS[0]);  //Re-enable if lights are "off"
   autoChangePatterns = false;
-  buttonPushCounter = (buttonPushCounter + 1) % 13;
+  buttonPushCounter = (buttonPushCounter + 1) % 15;
 }
 
 void startAutoMode() {
@@ -387,11 +388,17 @@ void loop() {
       break;
     case 13:
      
-      BlackBarLS(band, barHeight);
-      TriPeak2LS(band);
+      BlackBar1LS(band, barHeight);
+      TriPeakLS(band);
      
       break;
+
     
+      case 14:
+     
+      changingBarsLS1(band, barHeight);
+     NormalPeakLS(band, PeakColor1);
+      break;
   } 
   
   
@@ -401,19 +408,19 @@ void loop() {
   }
 
   // Decay peak
-  EVERY_N_MILLISECONDS(60) {
+  EVERY_N_MILLISECONDS(85) {
     for (byte band = 0; band < NUM_BANDS; band++)
       if (peak[band] > 0) peak[band] -= 1;
     colorTimer++;
   }
 
   // Used in some of the patterns
-  EVERY_N_MILLISECONDS(10) {
+  EVERY_N_MILLISECONDS(3) {
     colorTimer++;
   }
 
   EVERY_N_SECONDS(10) {
-    if (autoChangePatterns) buttonPushCounter = (buttonPushCounter + 1) % 13;
+    if (autoChangePatterns) buttonPushCounter = (buttonPushCounter + 1) % 15;
   }
 
   FastLED.show();
@@ -601,7 +608,7 @@ void BlackBarLS(int band, int barHeight) {
   for (int x = xStart; x < xStart + BAR_WIDTH; x++) {
     for (int y = TOP; y >= 0; y--) {
      if(y >= TOP - barHeight){
-        matrix->drawPixel(x, y, CRGB(0, 0, 0)); // make unused pixel in a band black
+        matrix->drawPixel(x, y, CRGB(5, 5, 5)); // make unused pixel in a band black
      }
      else {
       matrix->drawPixel(x, y, CRGB(0, 0, 0)); // make unused pixel in a band black
@@ -610,21 +617,37 @@ void BlackBarLS(int band, int barHeight) {
   }
 }
 
+void changingBarsLS1(int band, int barHeight) {
+  int xStart = BAR_WIDTH * band;
+  for (int x = xStart; x < xStart + BAR_WIDTH; x++) {
+    for (int y = TOP; y >= 0; y--) {
+     if(y >= TOP - barHeight){
+        matrix -> drawPixel(x, y, CHSV(ChangingBar_Color));
+     }
+     else {
+      matrix->drawPixel(x, y, CRGB(0, 0, 0)); // make unused pixel in a band black
+     }
+    } 
+  }
+}
+
+void BlackBar1LS(int band, int barHeight) {
+  int xStart = BAR_WIDTH * band;
+  for (int x = xStart; x < xStart + BAR_WIDTH; x++) {
+    for (int y = TOP; y >= 0; y--) {
+     if(y >= TOP - barHeight){
+        matrix->drawPixel(x, y, CRGB(0, 0, 0)); // make unused pixel in a band black
+     }
+     else {
+      matrix->drawPixel(x, y, CRGB(0, 0, 0)); // make unused pixel in a band black
+     }
+    } 
+  }
+}
 void outrunPeakLS(int band) {
   int xStart = BAR_WIDTH * band;
   int peakHeight = TOP - peak[band] - 1;
   for (int x = xStart; x < xStart + BAR_WIDTH; x++) {
     matrix -> drawPixel(x, peakHeight, ColorFromPalette(outrunPal, peakHeight * (255 / kMatrixHeight)));
-  }
-}
-
-//************ Mode 10 ***********
-void TriPeak2LS(int band) {
-  int xStart = BAR_WIDTH * band;
-  int peakHeight = TOP - peak[band] - 1;
-  for (int x = xStart; x < xStart + BAR_WIDTH; x++) {
-    if (peakHeight < 4) matrix -> drawPixel(x, peakHeight, CHSV(TriBar_Color_Top_Peak2)); //Top red
-    else if (peakHeight > 8) matrix -> drawPixel(x, peakHeight, CHSV(TriBar_Color_Bottom_Peak2)); //green
-    else matrix -> drawPixel(x, peakHeight, CHSV(TriBar_Color_Middle_Peak2)); //yellow
   }
 }
