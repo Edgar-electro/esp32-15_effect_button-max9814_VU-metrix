@@ -236,7 +236,7 @@ void loop() {
       if (i>63  && i<=87 ) bandValues[12] += (int)vReal[i];
       if (i>87  && i<=118 ) bandValues[13] += (int)vReal[i];
       if (i>118 && i<=162 ) bandValues[14] += (int)vReal[i];
-      if (i>162 v && i<=222 ) bandValues[15] += (int)vReal[i];
+      if (i>162 && i<=222 ) bandValues[15] += (int)vReal[i];
       if (i>303  )          bandValues[16] += (int)vReal[i];
         
     }
